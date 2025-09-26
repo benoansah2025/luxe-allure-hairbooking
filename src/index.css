@@ -2,95 +2,111 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 253 100% 98%; /* Cream white */
+    --foreground: 340 15% 20%; /* Dark brown-pink */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 350 60% 96%; /* Light pink cream */
+    --card-foreground: 340 15% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 350 60% 96%;
+    --popover-foreground: 340 15% 20%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 330 85% 70%; /* Soft pink */
+    --primary-foreground: 350 60% 96%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 280 60% 80%; /* Soft purple */
+    --secondary-foreground: 280 20% 30%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 350 40% 90%; /* Very light pink */
+    --muted-foreground: 340 15% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 320 70% 85%; /* Light pink accent */
+    --accent-foreground: 320 30% 30%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 350 30% 85%; /* Soft pink border */
+    --input: 350 30% 85%;
+    --ring: 330 85% 70%;
 
-    --radius: 0.5rem;
+    --radius: 1rem; /* Rounded corners for salon theme */
 
-    --sidebar-background: 0 0% 98%;
+    /* Salon-specific colors */
+    --salon-pink: 330 85% 70%;
+    --salon-purple: 280 60% 80%;
+    --salon-cream: 253 100% 98%;
+    --salon-blush: 340 50% 90%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--salon-pink)), hsl(var(--salon-purple)));
+    --gradient-soft: linear-gradient(180deg, hsl(var(--salon-cream)), hsl(var(--salon-blush)));
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Shadows */
+    --shadow-soft: 0 4px 20px hsla(var(--salon-pink), 0.15);
+    --shadow-card: 0 8px 32px hsla(var(--salon-pink), 0.1);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar variables */
+    --sidebar-background: var(--salon-cream);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--salon-pink);
+    --sidebar-primary-foreground: var(--salon-cream);
+    --sidebar-accent: var(--salon-blush);
+    --sidebar-accent-foreground: var(--foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 340 20% 12%; /* Dark pink-brown */
+    --foreground: 350 60% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 340 25% 15%;
+    --card-foreground: 350 60% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 340 25% 15%;
+    --popover-foreground: 350 60% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 330 85% 70%;
+    --primary-foreground: 340 20% 12%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 280 40% 25%;
+    --secondary-foreground: 280 60% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 340 15% 20%;
+    --muted-foreground: 350 30% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 320 50% 30%;
+    --accent-foreground: 320 60% 90%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 340 15% 25%;
+    --input: 340 15% 25%;
+    --ring: 330 85% 70%;
+
+    --salon-pink: 330 85% 70%;
+    --salon-purple: 280 60% 60%;
+    --salon-cream: 340 20% 12%;
+    --salon-blush: 340 30% 20%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(var(--salon-pink)), hsl(var(--salon-purple)));
+    --gradient-soft: linear-gradient(180deg, hsl(var(--salon-cream)), hsl(var(--salon-blush)));
+
+    --shadow-soft: 0 4px 20px hsla(var(--salon-pink), 0.3);
+    --shadow-card: 0 8px 32px hsla(var(--salon-pink), 0.2);
+
+    --sidebar-background: var(--salon-cream);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--salon-pink);
+    --sidebar-primary-foreground: var(--salon-cream);
+    --sidebar-accent: var(--salon-blush);
+    --sidebar-accent-foreground: var(--foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
   }
 }
 
@@ -98,8 +114,72 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    background: hsl(var(--background));
   }
+}
+
+@layer components {
+  .salon-card {
+    @apply bg-card border border-border rounded-2xl shadow-[var(--shadow-card)] backdrop-blur-sm;
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--salon-blush)));
+  }
+
+  .salon-gradient {
+    background: var(--gradient-primary);
+  }
+
+  .salon-button {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-3 font-medium transition-all duration-300;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .salon-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px hsla(var(--salon-pink), 0.25);
+  }
+
+  .category-card {
+    @apply salon-card p-6 transition-all duration-300 hover:scale-105 cursor-pointer;
+  }
+
+  .service-card {
+    @apply salon-card p-4 transition-all duration-300 hover:shadow-lg;
+  }
+
+  .hero-section {
+    background: var(--gradient-soft);
+    @apply min-h-[60vh] flex items-center justify-center text-center relative overflow-hidden;
+  }
+
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle at 20% 80%, hsla(var(--salon-pink), 0.1) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 20%, hsla(var(--salon-purple), 0.1) 0%, transparent 50%);
+  }
+}
+
+/* Custom animations for salon theme */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
 }
