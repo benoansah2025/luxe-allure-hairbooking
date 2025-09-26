@@ -77,6 +77,11 @@ export const ServiceCatalog = () => {
     setShowBookingModal(true);
   };
 
+  const handleBookMultipleServices = () => {
+    setSelectedService(null);
+    setShowBookingModal(true);
+  };
+
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -107,9 +112,9 @@ export const ServiceCatalog = () => {
           </p>
           <Button 
             className="salon-button text-lg px-8 py-4 animate-fade-in"
-            onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={handleBookMultipleServices}
           >
-            Explore Services
+            Book Appointment
           </Button>
         </div>
       </section>

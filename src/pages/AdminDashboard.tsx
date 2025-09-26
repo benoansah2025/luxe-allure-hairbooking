@@ -209,9 +209,9 @@ export const AdminDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Date & Time</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Service & Location</TableHead>
+                <TableHead>Date & Time</TableHead>
                     <TableHead>Duration</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Status</TableHead>

@@ -1,24 +1,24 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, DollarSign } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ServiceSelection } from "./booking/ServiceSelection";
+import { PersonalInfo } from "./booking/PersonalInfo";
+import { DateTimeSelection } from "./booking/DateTimeSelection";
+import { ReviewBooking } from "./booking/ReviewBooking";
+import { ConfirmationScreen } from "./booking/ConfirmationScreen";
 
 interface Service {
   id: string;
+  category_id: string;
   name: string;
   description: string;
   duration: number;
   price: number;
+  image_url: string;
 }
+
+type BookingStep = 'services' | 'personal' | 'datetime' | 'review' | 'confirmation';
 
 interface BookingModalProps {
   service: Service | null;
@@ -27,34 +27,82 @@ interface BookingModalProps {
 }
 
 export const BookingModal = ({ service, isOpen, onClose }: BookingModalProps) => {
-  const [date, setDate] = useState<Date>();
-  const [time, setTime] = useState("");
+  const [currentStep, setCurrentStep] = useState<BookingStep>('services');
+  const [selectedServices, setSelectedServices] = useState<Service[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [serviceLocation, setServiceLocation] = useState<'in-salon' | 'at-home'>('in-salon');
+  const [date, setDate] = useState<Date>();
+  const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [orderNumber, setOrderNumber] = useState("");
   const { toast } = useToast();
 
-  const timeSlots = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-    "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"
-  ];
-
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  // Initialize with passed service if provided
+  useState(() => {
+    if (service && isOpen) {
+      setSelectedServices([service]);
+      setCurrentStep('personal');
+    } else if (isOpen && !service) {
+      setSelectedServices([]);
+      setCurrentStep('services');
     }
-    return `${mins}m`;
+  });
+
+  const resetForm = () => {
+    setCurrentStep('services');
+    setSelectedServices([]);
+    setCustomerName("");
+    setCustomerEmail("");
+    setCustomerPhone("");
+    setServiceLocation('in-salon');
+    setDate(undefined);
+    setTime("");
+    setNotes("");
+    setOrderNumber("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!service || !date || !time || !customerName || !customerEmail || !customerPhone) {
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleNext = () => {
+    switch (currentStep) {
+      case 'services':
+        setCurrentStep('personal');
+        break;
+      case 'personal':
+        setCurrentStep('datetime');
+        break;
+      case 'datetime':
+        setCurrentStep('review');
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleBack = () => {
+    switch (currentStep) {
+      case 'personal':
+        setCurrentStep('services');
+        break;
+      case 'datetime':
+        setCurrentStep('personal');
+        break;
+      case 'review':
+        setCurrentStep('datetime');
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!selectedServices.length || !date || !time || !customerName || !customerEmail || !customerPhone) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -66,31 +114,56 @@ export const BookingModal = ({ service, isOpen, onClose }: BookingModalProps) =>
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("bookings").insert({
-        service_id: service.id,
-        customer_name: customerName,
-        customer_email: customerEmail,
-        customer_phone: customerPhone,
-        booking_date: format(date, "yyyy-MM-dd"),
-        booking_time: time,
-        notes: notes.trim() || null,
-      });
+      // Calculate total including travel fee
+      const subtotal = selectedServices.reduce((total, service) => total + Number(service.price), 0);
+      const travelFee = serviceLocation === 'at-home' ? 25 : 0;
+      const total = subtotal + travelFee;
 
-      if (error) throw error;
+      // Create booking for the first service (main booking)
+      const { data: bookingData, error: bookingError } = await supabase
+        .from("bookings")
+        .insert({
+          service_id: selectedServices[0].id,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          booking_date: date.toISOString().split('T')[0],
+          booking_time: time,
+          service_location: serviceLocation,
+          notes: notes.trim() || null,
+        })
+        .select()
+        .single();
+
+      if (bookingError) throw bookingError;
+
+      // If multiple services, create additional bookings
+      if (selectedServices.length > 1) {
+        const additionalBookings = selectedServices.slice(1).map(service => ({
+          service_id: service.id,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          booking_date: date.toISOString().split('T')[0],
+          booking_time: time,
+          service_location: serviceLocation,
+          notes: `Additional service for booking ${bookingData.order_number}`,
+        }));
+
+        const { error: additionalError } = await supabase
+          .from("bookings")
+          .insert(additionalBookings);
+
+        if (additionalError) throw additionalError;
+      }
+
+      setOrderNumber(bookingData.order_number);
+      setCurrentStep('confirmation');
 
       toast({
         title: "Booking Confirmed!",
-        description: `Your appointment for ${service.name} has been booked for ${format(date, "PPP")} at ${time}.`,
+        description: `Your appointment has been booked successfully.`,
       });
-
-      // Reset form
-      setDate(undefined);
-      setTime("");
-      setCustomerName("");
-      setCustomerEmail("");
-      setCustomerPhone("");
-      setNotes("");
-      onClose();
     } catch (error) {
       console.error("Error creating booking:", error);
       toast({
@@ -103,161 +176,115 @@ export const BookingModal = ({ service, isOpen, onClose }: BookingModalProps) =>
     }
   };
 
-  if (!service) return null;
+  const getTotalAmount = () => {
+    const subtotal = selectedServices.reduce((total, service) => total + Number(service.price), 0);
+    const travelFee = serviceLocation === 'at-home' ? 25 : 0;
+    return subtotal + travelFee;
+  };
+
+  const getDialogTitle = () => {
+    switch (currentStep) {
+      case 'services':
+        return 'Book Your Services';
+      case 'personal':
+        return 'Personal Information';
+      case 'datetime':
+        return 'Select Date & Time';
+      case 'review':
+        return 'Review Booking';
+      case 'confirmation':
+        return 'Booking Confirmed';
+      default:
+        return 'Book Appointment';
+    }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto salon-card">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-foreground">
-            Book {service.name}
-          </DialogTitle>
-        </DialogHeader>
-
-        {/* Service Summary */}
-        <div className="bg-muted/30 rounded-xl p-4 mb-6">
-          <h3 className="font-semibold text-foreground mb-2">{service.name}</h3>
-          <p className="text-sm text-muted-foreground mb-3">{service.description}</p>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              <span>{formatDuration(service.duration)}</span>
-            </div>
-            <div className="flex items-center gap-1 text-lg font-semibold text-primary">
-              <DollarSign className="w-5 h-5" />
-              {service.price}
-            </div>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Personal Information */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Personal Information</h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Full Name *</Label>
-                <Input
-                  id="name"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  required
-                  className="rounded-xl"
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto salon-card ${
+        currentStep === 'services' ? 'sm:max-w-6xl' : 'sm:max-w-4xl'
+      }`}>
+        {currentStep !== 'confirmation' && (
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-foreground">{getDialogTitle()}</h1>
+            <div className="flex items-center justify-center gap-2 mt-4">
+              {['services', 'personal', 'datetime', 'review'].map((step, index) => (
+                <div
+                  key={step}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    currentStep === step ? 'bg-primary' : 
+                    ['services', 'personal', 'datetime', 'review'].indexOf(currentStep) > index ? 'bg-primary/50' : 'bg-muted'
+                  }`}
                 />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone Number *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  required
-                  className="rounded-xl"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="email">Email Address *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                required
-                className="rounded-xl"
-              />
+              ))}
             </div>
           </div>
+        )}
 
-          {/* Date & Time Selection */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Select Date & Time</h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Select Date *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal rounded-xl",
-                        !date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      disabled={(date) => date < new Date() || date.getDay() === 0}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+        {currentStep === 'services' && (
+          <ServiceSelection
+            selectedServices={selectedServices}
+            onServicesChange={setSelectedServices}
+            onNext={handleNext}
+          />
+        )}
 
-              <div>
-                <Label htmlFor="time">Select Time *</Label>
-                <select
-                  id="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  required
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-background text-foreground"
-                >
-                  <option value="">Choose time</option>
-                  {timeSlots.map((slot) => (
-                    <option key={slot} value={slot}>
-                      {slot}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
+        {currentStep === 'personal' && (
+          <PersonalInfo
+            customerName={customerName}
+            customerEmail={customerEmail}
+            customerPhone={customerPhone}
+            serviceLocation={serviceLocation}
+            onCustomerNameChange={setCustomerName}
+            onCustomerEmailChange={setCustomerEmail}
+            onCustomerPhoneChange={setCustomerPhone}
+            onServiceLocationChange={setServiceLocation}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
 
-          {/* Additional Notes */}
-          <div>
-            <Label htmlFor="notes">Additional Notes (Optional)</Label>
-            <Textarea
-              id="notes"
-              placeholder="Any special requests or notes for your appointment..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="rounded-xl"
-              rows={3}
-            />
-          </div>
+        {currentStep === 'datetime' && (
+          <DateTimeSelection
+            date={date}
+            time={time}
+            notes={notes}
+            onDateChange={setDate}
+            onTimeChange={setTime}
+            onNotesChange={setNotes}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
 
-          {/* Submit Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="flex-1 rounded-xl"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="flex-1 salon-button"
-            >
-              {loading ? "Booking..." : "Confirm Booking"}
-            </Button>
-          </div>
-        </form>
+        {currentStep === 'review' && (
+          <ReviewBooking
+            selectedServices={selectedServices}
+            customerName={customerName}
+            customerEmail={customerEmail}
+            customerPhone={customerPhone}
+            serviceLocation={serviceLocation}
+            date={date}
+            time={time}
+            notes={notes}
+            onConfirm={handleConfirmBooking}
+            onBack={handleBack}
+            loading={loading}
+          />
+        )}
+
+        {currentStep === 'confirmation' && (
+          <ConfirmationScreen
+            orderNumber={orderNumber}
+            selectedServices={selectedServices}
+            customerName={customerName}
+            serviceLocation={serviceLocation}
+            date={date}
+            time={time}
+            totalAmount={getTotalAmount()}
+            onClose={handleClose}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
