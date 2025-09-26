@@ -24,7 +24,9 @@ export type Database = {
           customer_phone: string
           id: string
           notes: string | null
+          order_number: string | null
           service_id: string
+          service_location: string
           status: string
           updated_at: string
         }
@@ -37,7 +39,9 @@ export type Database = {
           customer_phone: string
           id?: string
           notes?: string | null
+          order_number?: string | null
           service_id: string
+          service_location?: string
           status?: string
           updated_at?: string
         }
@@ -50,7 +54,9 @@ export type Database = {
           customer_phone?: string
           id?: string
           notes?: string | null
+          order_number?: string | null
           service_id?: string
+          service_location?: string
           status?: string
           updated_at?: string
         }
@@ -140,7 +146,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_order_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
