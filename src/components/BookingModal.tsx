@@ -114,6 +114,9 @@ export const BookingModal = ({ service, isOpen, onClose }: BookingModalProps) =>
     setLoading(true);
 
     try {
+      // Get current user if authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // Calculate total including travel fee
       const subtotal = selectedServices.reduce((total, service) => total + Number(service.price), 0);
       const travelFee = serviceLocation === 'at-home' ? 25 : 0;
@@ -131,6 +134,7 @@ export const BookingModal = ({ service, isOpen, onClose }: BookingModalProps) =>
           booking_time: time,
           service_location: serviceLocation,
           notes: notes.trim() || null,
+          user_id: user?.id || null, // Set user_id if authenticated, null if anonymous
         })
         .select()
         .single();
@@ -148,6 +152,7 @@ export const BookingModal = ({ service, isOpen, onClose }: BookingModalProps) =>
           booking_time: time,
           service_location: serviceLocation,
           notes: `Additional service for booking ${bookingData.order_number}`,
+          user_id: user?.id || null, // Set user_id if authenticated, null if anonymous
         }));
 
         const { error: additionalError } = await supabase
